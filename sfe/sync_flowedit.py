@@ -19,7 +19,7 @@ import torch
 import torch.nn.functional as F
 
 from .flowedit import active_steps, flowedit
-from .geometry import PanoProjector, View, view_set
+from .geometry import PanoProjector, View, WarpedNoise, view_set
 from .models import FlowBackend
 from .prompts import ground_prompt
 
@@ -42,7 +42,8 @@ class SyncConfig:
     weight: str = "cosine"  # splat window: cosine | uniform
     weight_pow: float = 1.0  # cosine window exponent (>1 = less overlap averaging)
     sync: str = "dv"  # dv: synchronize velocity differences (ours) | none: independent views
-    noise: str = "view"  # view: i.i.d. noise per view | pano: one ERP noise, projected (nearest)
+    noise: str = "view"  # view: i.i.d. noise per view | pano: one ERP noise, projected (nearest) | warp: Gaussian-preserving warp
+    noise_up: int = 8  # with noise=warp: fine noise grid = noise_up x the ERP latent resolution
     src_mode: str = "encode"  # encode: VAE-encode each perspective crop | project: warp the ERP latent
     output: str = "views"  # views: decode views, blend in pixel space | erp: circular-decode ERP latent
     rotate: bool = False  # re-draw a random rotation of the view layout at every step (moving boundaries)
@@ -167,6 +168,14 @@ def sync_flowedit(
         return [View(v.yaw + dy, v.pitch if abs(v.pitch) >= 89 else v.pitch + dp, cfg.fov) for v in views]
 
     proj_lat, proj_px, x_src = make(base_views)
+    lat_hw, view_lat_hw = (H // f, W // f), tuple(x_src.shape[-2:])
+    warp_noise = None
+    if cfg.noise == "warp":
+        if cfg.rotate:
+            raise ValueError("noise=warp is precomputed for a fixed layout (no rotate)")
+        warp_noise = WarpedNoise(base_views, view_lat_hw, (lat_hw[0] * cfg.noise_up, lat_hw[1] * cfg.noise_up), dev)
+        if warp_noise.min_cells < 1:
+            raise ValueError(f"noise_up={cfg.noise_up} too small: some view pixels get no noise cell")
     texts = {"mid": (backend.text(src_prompt), backend.text(tar_prompt))}
     if cfg.view_prompts == "hint":
         texts["down"] = (backend.text(src_prompt + cfg.hint_down), backend.text(tar_prompt + cfg.hint_down))
@@ -194,9 +203,13 @@ def sync_flowedit(
         for _ in range(p.n_avg):
             if cfg.noise == "view":
                 eps = torch.randn(x_src.shape, generator=generator, device=dev)
-            else:
+            elif cfg.noise == "warp":
+                eps = warp_noise.sample(C, generator)
+            elif cfg.noise == "pano":
                 pano_eps = torch.randn((C, H // f, W // f), generator=generator, device=dev)
                 eps = proj_lat.to_views(pano_eps, mode="nearest")
+            else:
+                raise ValueError(cfg.noise)
             z_src = (1 - s) * x_src + s * eps
             v_src, v_tar = _velocity_pairs(backend, z_src, z_src + Dv, proj_lat.views, texts, cfg, p, s)
             dv += (v_tar - v_src) / p.n_avg

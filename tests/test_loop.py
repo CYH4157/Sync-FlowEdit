@@ -70,6 +70,13 @@ def test_edit_moves_towards_target_and_is_seamless():
     assert out.shape == img.shape
 
 
+def test_warped_noise_loop():
+    be, img = ToyBackend(), toy_erp()
+    cfg = SyncConfig(views="dense18", view_px=32, noise="warp", dv_rescale="global")
+    out, _ = sync_flowedit(be, img, "red", "blue", P, cfg)
+    assert out.shape == img.shape and out[:, 2].mean() > img[:, 2].mean() + 0.3
+
+
 def test_rotating_layout():
     be, img = ToyBackend(), toy_erp()
     cfg = SyncConfig(views="cube6", fov=100, view_px=32, rotate=True)

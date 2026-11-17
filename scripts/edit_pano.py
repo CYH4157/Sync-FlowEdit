@@ -41,7 +41,8 @@ def build_parser():
     ap.add_argument("--rescale_max", type=float, default=3.0)
     ap.add_argument("--rescale_steps", default="all", choices=["all", "early", "late"])
     ap.add_argument("--view_prompts", default="none", choices=["none", "hint", "ground"])
-    ap.add_argument("--noise", default="view", choices=["view", "pano"])
+    ap.add_argument("--noise", default="view", choices=["view", "pano", "warp"])
+    ap.add_argument("--noise_up", type=int, default=8, help="noise=warp: fine grid factor")
     ap.add_argument("--src_mode", default="encode", choices=["encode", "project"])
     ap.add_argument("--output", default="views", choices=["views", "erp"])
     ap.add_argument("--T", type=int)
@@ -71,7 +72,7 @@ def run(backend, args, img: torch.Tensor):
         return erp_flowedit(backend, img, args.src, args.tar, p, g), {}
     cfg = SyncConfig(views=args.views, fov=args.fov, view_px=args.view_px, weight=args.weight, weight_pow=args.weight_pow,
                      rotate=args.rotate, pitch_jitter=args.pitch_jitter, out_views=args.out_views, decode_views=args.decode_views, dv_rescale=args.dv_rescale, rescale_max=args.rescale_max, rescale_steps=args.rescale_steps, view_prompts=args.view_prompts,
-                     sync="dv" if args.method == "sync" else "none", noise=args.noise,
+                     sync="dv" if args.method == "sync" else "none", noise=args.noise, noise_up=args.noise_up,
                      src_mode=args.src_mode, output=args.output)
     return sync_flowedit(backend, img, args.src, args.tar, p, cfg, g)
 

@@ -187,3 +187,61 @@ class PanoProjector:
         if fallback is not None:
             out = torch.where(den > 0, out, fallback.float())
         return out.to(views.dtype)
+
+
+class WarpedNoise:
+    """Gaussian-preserving noise warping from one spherical white-noise field into every view.
+
+    A fine ERP grid (fine_hw) carries white noise on the sphere: cell j gets
+    n_j = sqrt(a_j) * g_j with g_j ~ N(0, 1) and a_j its solid angle (~ cos(lat)).
+    Each view pixel p sums the cells whose centers fall inside it (its footprint F_p):
+        eps_p = sum_{j in F_p} n_j / sqrt(sum_{j in F_p} a_j)   ~ N(0, 1) exactly,
+    and pixels of the same view have disjoint footprints, so each view gets i.i.d. N(0, 1)
+    noise (no blocks, unlike nearest-neighbor projection), while overlapping views see the
+    *same* noise for the same part of the sphere (as in "How I Warped Your Noise", Chang et al. 2024,
+    reimplemented here for a sphere -> pinhole map).
+    """
+
+    def __init__(self, views: Sequence[View], view_hw: tuple[int, int], fine_hw: tuple[int, int],
+                 device: torch.device | str = "cpu"):
+        self.n, (self.h, self.w), (self.Hf, self.Wf) = len(views), view_hw, fine_hw
+        self.device = torch.device(device)
+        d = erp_directions(self.Hf, self.Wf).reshape(-1, 3).to(self.device)  # float64
+        area = (d[:, 1].abs().clamp(max=1.0).arccos().sin()).float()  # cos(lat) = sin(polar angle)
+        src, tgt = [], []
+        for k, v in enumerate(views):
+            tan_x = math.tan(math.radians(v.fov) / 2)
+            tan_y = tan_x * self.h / self.w
+            dc = d @ rotation(v.yaw, v.pitch).to(self.device)
+            z = dc[:, 2]
+            zs = z.clamp_min(1e-9)
+            xn, yn = dc[:, 0] / (zs * tan_x), -dc[:, 1] / (zs * tan_y)
+            ok = (z > 1e-9) & (xn.abs() < 1) & (yn.abs() < 1)
+            col = ((xn[ok] + 1) / 2 * self.w).long().clamp(0, self.w - 1)
+            row = ((yn[ok] + 1) / 2 * self.h).long().clamp(0, self.h - 1)
+            src.append(ok.nonzero().squeeze(1))
+            tgt.append(k * self.h * self.w + row * self.w + col)
+        self.src, self.tgt = torch.cat(src), torch.cat(tgt)
+        self.sqrt_a = area.sqrt()
+        A = torch.zeros(self.n * self.h * self.w, device=self.device).index_add_(0, self.tgt, area[self.src])
+        self.count = torch.zeros_like(A).index_add_(0, self.tgt, torch.ones_like(self.tgt, dtype=torch.float32))
+        self.inv_sqrt_A = A.clamp_min(1e-12).rsqrt()
+
+    @property
+    def min_cells(self) -> int:
+        """Fewest fine cells in any view pixel (must be >= 1; ~10+ makes the footprints accurate)."""
+        return int(self.count.min().item())
+
+    def sample(self, channels: int, generator: torch.Generator | None = None, chunk: int = 4) -> torch.Tensor:
+        """(N, channels, h, w) noise, N(0, 1) per pixel, consistent across overlapping views."""
+        out = torch.empty(channels, self.n * self.h * self.w, device=self.device)
+        empty = self.count == 0
+        for c0 in range(0, channels, chunk):
+            c1 = min(c0 + chunk, channels)
+            g = torch.randn((c1 - c0, self.Hf * self.Wf), generator=generator, device=self.device)
+            n = (g * self.sqrt_a)[:, self.src]
+            acc = torch.zeros(c1 - c0, out.shape[1], device=self.device).index_add_(1, self.tgt, n)
+            out[c0:c1] = acc * self.inv_sqrt_A
+        if empty.any():  # cannot happen with a fine enough grid; keep the distribution correct anyway
+            out[:, empty] = torch.randn((channels, int(empty.sum())), generator=generator, device=self.device)
+        return out.view(channels, self.n, self.h, self.w).transpose(0, 1).contiguous()
