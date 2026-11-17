@@ -1,0 +1,10 @@
+torch>=2.3
+diffusers>=0.31
+transformers>=4.44
+accelerate
+sentencepiece
+protobuf
+lpips
+pillow
+numpy
+pyyaml

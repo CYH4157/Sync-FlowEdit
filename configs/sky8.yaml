@@ -1,0 +1,50 @@
+root: data/pano
+panoramas:
+- image: farm_road.jpg
+  group: outdoor
+  src: a photo of a dirt road through a grassy field under a cloudy sky
+  edits:
+  - name: sunset
+    tar: a photo of a dirt road through a grassy field at sunset with an orange sky
+- image: treetop_balcony.jpg
+  group: outdoor
+  src: a photo of a wooden deck with a small wooden cabin overlooking a forest
+  edits:
+  - name: night
+    tar: a photo of a wooden deck with a small wooden cabin overlooking a forest at night under a starry sky
+- image: clarens_night_02.jpg
+  group: outdoor
+  src: a photo of a rocky hill with green grass and mountains under a blue sky
+  edits:
+  - name: sunset
+    tar: a photo of a rocky hill with green grass and mountains at sunset
+- image: etzwihl.jpg
+  group: outdoor
+  src: a photo of a paved road through a green field at dusk
+  edits:
+  - name: night
+    tar: a photo of a paved road through a green field at night under a starry sky
+- image: stuttgart_hillside.jpg
+  group: outdoor
+  src: a photo of a grassy hillside with trees under a cloudy sky
+  edits:
+  - name: sunset
+    tar: a photo of a grassy hillside with trees at sunset with an orange sky
+- image: kloofendal_overcast.jpg
+  group: outdoor
+  src: a photo of a rocky hilltop with bushes overlooking a valley under an overcast sky
+  edits:
+  - name: sunset
+    tar: a photo of a rocky hilltop with bushes overlooking a valley at sunset
+- image: brick_factory_01.jpg
+  group: outdoor
+  src: a photo of a sandy dirt yard with trees and buildings under a sunny sky
+  edits:
+  - name: night
+    tar: a photo of a sandy dirt yard with trees and buildings at night under a starry sky
+- image: zwartkops_curve_sunset.jpg
+  group: outdoor
+  src: a photo of a race track curve with a building at sunset
+  edits:
+  - name: night
+    tar: a photo of a race track curve with a building at night

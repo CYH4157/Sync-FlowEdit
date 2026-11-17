@@ -1,0 +1,50 @@
+root: data/pano
+panoramas:
+- image: urban_street_02.jpg
+  group: outdoor
+  src: a photo of a city street with brick apartment buildings and a railway bridge
+  edits:
+  - name: snow
+    tar: a photo of a city street with brick apartment buildings and a railway bridge, covered in snow in winter
+- image: smelting_tower_interior.jpg
+  group: indoor
+  src: a photo of a tunnel with rough stone walls and a bright opening
+  edits:
+  - name: icecave
+    tar: a photo of an ice cave with frozen icy walls and a bright opening
+- image: zwartkops_start_morning.jpg
+  group: outdoor
+  src: a photo of a race track with asphalt and grandstands under a blue sky
+  edits:
+  - name: snow
+    tar: a photo of a race track with grandstands, covered in snow in winter
+- image: street_lamp.jpg
+  group: outdoor
+  src: a photo of a park at night with trees, grass and a street lamp
+  edits:
+  - name: snow
+    tar: a photo of a park at night with trees and a street lamp, covered in snow
+- image: palermo_park.jpg
+  group: outdoor
+  src: a photo of a park with large trees and a dirt path on a sunny day
+  edits:
+  - name: winter
+    tar: a photo of a park with large trees and a dirt path, covered in snow in winter
+- image: christmas_photo_studio_05.jpg
+  group: indoor
+  src: a photo of a white room with a christmas tree, a fireplace and a table
+  edits:
+  - name: candle
+    tar: a photo of a white room with a christmas tree, a fireplace and a table at night, lit by candles
+- image: poly_haven_studio.jpg
+  group: indoor
+  src: a photo of an office with computers, desks, chairs and a wooden ceiling
+  edits:
+  - name: ghibli
+    tar: a photo of an office with computers, desks, chairs and a wooden ceiling, Studio Ghibli anime style
+- image: interior_construction.jpg
+  group: indoor
+  src: a photo of an unfinished building interior with concrete block walls and a wooden floor
+  edits:
+  - name: watercolor
+    tar: a photo of an unfinished building interior with concrete block walls and a wooden floor, watercolor painting
