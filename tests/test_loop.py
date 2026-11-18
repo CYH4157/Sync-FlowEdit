@@ -116,6 +116,18 @@ def test_ground_prompt_rules():
     assert ground_prompt("a photo of a cinema with red seats") == "a photo of a cinema with red seats"
 
 
+def test_ground_prompt_neutral():
+    from sfe.prompts import ground_prompt
+    t = "a photo of a dirt road at sunset with an orange sky"
+    assert ground_prompt(t) == "a photo of a dirt road in warm orange evening light"
+    assert ground_prompt(t, "neutral") == "a photo of a dirt road in the evening"
+    from sfe.sync_flowedit import _view_category
+    from sfe.geometry import View
+    cfg = SyncConfig(down_pitch=80)
+    assert _view_category(View(0, -50), cfg) == "mid" and _view_category(View(0, -90), cfg) == "down"
+    assert _view_category(View(0, -50), SyncConfig()) == "down"
+
+
 def test_erp_baseline_runs():
     be, img = ToyBackend(), toy_erp()
     out = erp_flowedit(be, img, "red", "blue", P)

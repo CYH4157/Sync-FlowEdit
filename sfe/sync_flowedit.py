@@ -58,6 +58,8 @@ class SyncConfig:
     hint_down: str = ", view looking down at the ground"
     hint_up: str = ", view looking up"
     hint_pitch: float = 45.0  # |pitch| at or beyond which a view counts as looking up / down
+    ground_style: str = "warm"  # view_prompts=ground: warm (keeps light colour) | neutral (no colour words)
+    down_pitch: float = 0.0  # if > 0: only views with pitch <= -down_pitch count as "down" (e.g. 80 = pole only)
     extras: dict = field(default_factory=dict)
 
 
@@ -97,7 +99,7 @@ def _sync_dv(proj: PanoProjector, dv: torch.Tensor, cfg: SyncConfig, rescale: bo
 
 
 def _view_category(v: View, cfg: SyncConfig) -> str:
-    if v.pitch <= -cfg.hint_pitch:
+    if v.pitch <= -(cfg.down_pitch or cfg.hint_pitch):
         return "down"
     if v.pitch >= cfg.hint_pitch:
         return "up"
@@ -181,7 +183,7 @@ def sync_flowedit(
         texts["down"] = (backend.text(src_prompt + cfg.hint_down), backend.text(tar_prompt + cfg.hint_down))
         texts["up"] = (backend.text(src_prompt + cfg.hint_up), backend.text(tar_prompt + cfg.hint_up))
     elif cfg.view_prompts == "ground":
-        texts["down"] = (backend.text(ground_prompt(src_prompt)), backend.text(ground_prompt(tar_prompt)))
+        texts["down"] = (backend.text(ground_prompt(src_prompt, cfg.ground_style)), backend.text(ground_prompt(tar_prompt, cfg.ground_style)))
         texts["up"] = texts["mid"]
     elif cfg.view_prompts != "none":
         raise ValueError(cfg.view_prompts)

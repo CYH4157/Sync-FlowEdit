@@ -20,9 +20,22 @@ RULES = [
 ]
 
 
-def ground_prompt(text: str) -> str:
+# "neutral": same deletions, but no light colour (a down view told "warm orange light" paints orange blobs)
+NEUTRAL = {
+    "in warm orange evening light": "in the evening",
+    "in warm morning light": "in the morning",
+    "in dim dusk light": "at dusk",
+    "in bright sunlight": "on a sunny day",
+}
+
+
+def ground_prompt(text: str, style: str = "warm") -> str:
+    if style not in ("warm", "neutral"):
+        raise ValueError(style)
     out = text
     for pat, rep in RULES:
+        if style == "neutral":
+            rep = NEUTRAL.get(rep, rep)
         out = re.sub(pat, rep, out, flags=re.IGNORECASE)
     out = re.sub(r"\s{2,}", " ", out)
     out = re.sub(r"\s+,", ",", out)

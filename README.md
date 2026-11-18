@@ -36,7 +36,9 @@ python scripts/edit_pano.py --image data/pano/xxx.jpg --model flux --method sync
 
 `--method`：`sync`（我們的方法）、`independent`（每個視角各自 FlowEdit 再拼接）、`erp`（直接編輯整張 ERP）。
 
-消融選項：`--views {dense18,ring8_poles,ring8,cube6}`、`--weight {cosine,uniform}`、`--noise {view,pano,warp}`（`warp`：保留高斯分布的球面噪聲 warping，`--noise_up` 控制細網格倍率）、`--src_mode {encode,project}`、`--output {views,erp}`、`--view_px`、`--fov`。
+目前建議設定：`--dv_rescale global --view_prompts ground --ground_style neutral --noise warp`（往下的視角用拿掉天空內容、也不帶光線顏色的 prompt）。
+
+消融選項：`--ground_style {warm,neutral}`、`--down_pitch`（>0 時只有 pitch ≤ −down_pitch 的視角算往下）、`--views {dense18,ring8_poles,ring8,cube6}`、`--weight {cosine,uniform}`、`--noise {view,pano,warp}`（`warp`：保留高斯分布的球面噪聲 warping，`--noise_up` 控制細網格倍率）、`--src_mode {encode,project}`、`--output {views,erp}`、`--view_px`、`--fov`。
 
 3 張 H100 跑 benchmark（我們伺服器的 GPU 0 故障，只用 GPU 1–3；rank 0–2 對應 GPU 1–3）：
 
